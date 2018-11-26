@@ -15,7 +15,7 @@ amqp.channelStream()
         switchMap(ch => fcm.pipeline(ch, amqp.messageStream(ch)))
     )
     .subscribe({
-        next: id => log.debug({ message_id: id }, ' FCM notifiation pushed'),
+        next: id => log.debug({ message_id: id }, 'message processed'),
         error: err => log.error({ err: err.message, stack: err.stack }, 'error from pipeline'),
         complete: () => log.error('pipeline completed (should never complete)')
     })

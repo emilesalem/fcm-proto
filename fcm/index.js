@@ -3,8 +3,7 @@ module.exports = {
     pipeline
 }
 
-const { of } = require('rxjs')
-const { mergeMap, catchError } = require('rxjs/operators')
+const { mergeMap } = require('rxjs/operators')
 const fcm = require('firebase-admin')
 const serviceAccount = require('../fcm-service-account.json')
 const registrar = require('../registration')
@@ -24,24 +23,28 @@ const log = require('../log').child({ module: 'fcm_pipeline' })
 function pipeline (ch, msg$) {
     init()
     return msg$.pipe(
-        mergeMap(msg => processMessage(ch, msg)),
-        catchError(e => {
-            log.error({ error: e.message, stack: e.stack }, 'fcm pipeline error')
-            return of(e)
-        })
+        mergeMap(msg => processMessage(ch, msg))
     )
 }
 
 function processMessage (ch, msg) {
-    return fcm.messaging()
-        .send({
-            notification: JSON.parse(msg.content.toString()),
-            token: registrar.tokens[0]
-        })
-        .then(response => {
-            ch.ack(msg)
-            return response
-        })
+    const token = registrar.tokens[0]
+    log.debug({ token }, 'FCM worker token')
+    try {
+        const messageContent = JSON.parse(msg.content.toString())
+        return fcm.messaging()
+            .send({
+                notification: messageContent,
+                token
+            }).then(response => {
+                ch.ack(msg)
+                return response
+            })
+    } catch (err) {
+        log.error({ err }, 'message process error')
+        ch.nack(msg, false, false)
+        return Promise.resolve(err)
+    }
 }
 
 function init () {
