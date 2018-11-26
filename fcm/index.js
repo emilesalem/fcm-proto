@@ -31,12 +31,15 @@ function processMessage (ch, msg) {
     const token = registrar.tokens[0]
     log.debug({ token }, 'FCM worker token')
     try {
-        const messageContent = JSON.parse(msg.content.toString())
+        const fcmPayload = {
+            notification: JSON.parse(msg.content.toString()),
+            // comment token or topic to test individual or topic delivery
+            // token
+            topic: 'test'
+        }
         return fcm.messaging()
-            .send({
-                notification: messageContent,
-                token
-            }).then(response => {
+            .send(fcmPayload)
+            .then(response => {
                 ch.ack(msg)
                 return response
             })
