@@ -1,0 +1,38 @@
+{
+  "name": "fcm-proto",
+  "version": "1.0.0",
+  "description": "essai sur FCM",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emilesalem/fcm-proto.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/emilesalem/fcm-proto/issues"
+  },
+  "homepage": "https://github.com/emilesalem/fcm-proto#readme",
+  "dependencies": {
+    "@koa/cors": "2",
+    "amqplib": "^0.5.2",
+    "bunyan": "^1.8.12",
+    "firebase-admin": "^6.2.0",
+    "koa": "^2.6.2",
+    "koa-bodyparser": "^4.2.1",
+    "koa-router": "^7.4.0",
+    "rxjs": "^6.3.3"
+  },
+  "devDependencies": {
+    "eslint": "^5.9.0",
+    "eslint-config-standard": "^12.0.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-node": "^8.0.0",
+    "eslint-plugin-promise": "^4.0.1",
+    "eslint-plugin-standard": "^4.0.0"
+  }
+}
