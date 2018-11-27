@@ -3,7 +3,7 @@ module.exports = {
     pipeline
 }
 
-const { mergeMap } = require('rxjs/operators')
+const { mergeMap, groupBy, reduce } = require('rxjs/operators')
 const fcm = require('firebase-admin')
 const serviceAccount = require('../fcm-service-account.json')
 const registrar = require('../registration')
@@ -23,7 +23,29 @@ const log = require('../log').child({ module: 'fcm_pipeline' })
 function pipeline (ch, msg$) {
     init()
     return msg$.pipe(
-        mergeMap(msg => processMessage(ch, msg))
+        map(wrap),
+        groupBy(msg => msg.type),
+        mergeMap(batchProcess)
+    )
+}
+
+function wrap(msg){
+    try {
+        const content = JSON.parse(msg.content.toString())
+        return {
+            type: content.type,
+            source: msg
+        }
+    } catch (err) {
+        log.error({ err }, 'message process error')
+        ch.nack(msg, false, false)
+        return Promise.resolve(err)
+    }
+}
+
+function batchProcess(group$){
+    return group$.pipe(
+        reduce()
     )
 }
 
