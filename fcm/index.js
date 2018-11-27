@@ -2,8 +2,8 @@
 module.exports = {
     pipeline
 }
-
-const { mergeMap, groupBy, reduce } = require('rxjs/operators')
+const {interval} = require('rxjs')
+const { mergeMap, groupBy, reduce, window, map } = require('rxjs/operators')
 const fcm = require('firebase-admin')
 const serviceAccount = require('../fcm-service-account.json')
 const registrar = require('../registration')
@@ -23,9 +23,12 @@ const log = require('../log').child({ module: 'fcm_pipeline' })
 function pipeline (ch, msg$) {
     init()
     return msg$.pipe(
-        map(wrap),
-        groupBy(msg => msg.type),
-        mergeMap(batchProcess)
+        window(interval(1000)),
+        mergeMap(win$ => win$.pipe(
+            map(wrap),
+            groupBy(msg => msg.type),
+            mergeMap(g => batchProcess(g, ch))
+        ))
     )
 }
 
@@ -43,10 +46,41 @@ function wrap(msg){
     }
 }
 
-function batchProcess(group$){
+function batchProcess(group$, ch){
     return group$.pipe(
-        reduce()
+        reduce((acc, curr, i) => {
+            return {
+                count: i
+            } 
+        }),
+        mergeMap(batch => processBatch(ch, batch))
     )
+}
+
+function processBatch (ch, batch) {
+    const token = registrar.tokens[0]
+    log.debug({ token }, 'FCM worker token')
+    try {
+        const fcmPayload = {
+            notification: {
+                body:`${batch.count}`,
+                title: 'TEST'
+            },
+            // comment token or topic to test individual or topic delivery
+            token
+        //    topic: 'test'
+        }
+        return fcm.messaging()
+            .send(fcmPayload)
+            .then(response => {
+                ch.ack(msg)
+                return response
+            })
+    } catch (err) {
+        log.error({ err }, 'message process error')
+        ch.nack(msg, false, false)
+        return Promise.resolve(err)
+    }
 }
 
 function processMessage (ch, msg) {
